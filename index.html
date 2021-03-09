@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    <title>Socket.IO chat</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; border: 5px solid #0072ff; }
+      #input:focus { outline: none; }
+      #form > button { background-color: #0072ff; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+      #form > button:hover { cursor: pointer; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages > li { padding: 0.5rem 1rem; }
+      #messages > li:nth-child(odd) { background: #efefef; }
+    </style>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+    <div id="typing-status"></div>
+    <form id="form" action="">
+      <button id="send-privet">Privert Send</button>
+      <input id="input" autocomplete="off" autofocus="on" /><button id="send">Send</button>
+      <div class="typing"></div>
+    </form>
+  </body>
+</html>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  const messages = document.getElementById('messages');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const typingStatus = document.getElementById('typing-status');
+
+  //Sends "typing" to the server every each key press
+  input.addEventListener("keypress", () => {
+    socket.emit("typing");
+    typingStatus.innerHTML = " ";
+    
+    //Checks to see if the length of input is 0, which means that it's empty, if so it'll clear typingStatus which is where the user is typing message is displayed
+    if (input.value.length === 0) {
+      console.log("Input element is empty");
+      socket.emit("typing", "hello");
+    }
+  });
+
+  socket.on("typing", (username) => {
+    typingStatus.innerHTML = `${username} is typing...`;
+  });
+
+  /*let counter = 0;
+
+  input.addEventListener('keypress', (event) => {
+    if (event) {
+      counter++;
+      socket.emit('typing status', event);
+      if (counter > 1) {
+        typingStatus.removeChild();
+        counter = 0;
+      }
+    }
+  })
+
+  socket.on('typing message', (msg) => {
+    const item = document.createElement('p');
+    item.textContent = msg;
+    typingStatus.appendChild(item);
+  });*/
+  
+  socket.on('connect', () => {
+    const username = prompt("Please enter your username here");
+    socket.emit("register", username);
+  })
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (input.value) {
+      socket.emit('chat message', input.value);
+      input.value = '';
+    }
+  });
+
+  socket.on('chat message', (msg) => {
+    const item = document.createElement('li');
+    item.textContent = msg;
+    messages.appendChild(item);
+    typingStatus.innerHTML = " ";
+  });
+</script>
